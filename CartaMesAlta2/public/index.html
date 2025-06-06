@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Carta més alta</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <h1>Carta més alta</h1>
+
+    <div id="lobby">
+        <button id="createGameBtn">Crear nova partida</button>
+        
+        <button id="joinGameBtn">Unir-se a la partida</button>
+        <input type="text" id="joinGameInput" placeholder="Introdueix codi partida" />
+
+    </div>
+
+    <div id="gameArea">
+        <p>Esperant a un altre jugador...</p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
