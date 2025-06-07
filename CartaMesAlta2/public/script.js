@@ -18,7 +18,26 @@ createGameBtn.onclick = () => {
     gameId = generateGameId();
     socket.emit('joinGame', gameId);
     lobby.style.display = 'none'; // amagar lobby
-    gameArea.innerHTML = `<p>Has creat la partida amb codi <strong>${gameId}</strong>. Esperant a un altre jugador...</p>`;
+    gameArea.innerHTML = `
+        <p>
+            Has creat la partida amb codi 
+            <strong id="gameCode">${gameId}</strong> 
+            <span id="copyIcon" style="cursor: pointer;">📋</span><br />
+            <small>(Fes clic a la icona per copiar el codi)</small>
+        </p>
+    `;
+    setTimeout(() => {
+    const copyIcon = document.getElementById('copyIcon');
+    const gameCode = document.getElementById('gameCode');
+
+    copyIcon.addEventListener('click', () => {
+        navigator.clipboard.writeText(gameCode.textContent).then(() => {
+            copyIcon.textContent = '✅';
+            setTimeout(() => copyIcon.textContent = '📋', 1500);
+        });
+    });
+}, 0);
+
 };
 
 // Unir-se a partida

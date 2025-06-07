@@ -44,7 +44,7 @@ p {
     gap: 25px;
     margin-top: 233px;
     width: 100%;
-    max-width: 1000px;
+    max-width: 1050px;
     flex-wrap: wrap;
     height: auto;
 }
@@ -135,4 +135,26 @@ button:hover {
     h2 {
         font-size: 2rem;
     }
+}
+
+.lobby-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+#joinGameInput {
+    padding: 12px 20px;
+    border-radius: 25px;
+    border: none;
+    font-size: 1rem;
+    width: 250px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+#joinGameInput:focus {
+    outline: none;
+    box-shadow: 0 0 10px #3f51b5;
 }
