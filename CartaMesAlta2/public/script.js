@@ -26,18 +26,18 @@ createGameBtn.onclick = () => {
             <small>(Fes clic a la icona per copiar el codi)</small>
         </p>
     `;
+    // Copiar codi al portapapers
     setTimeout(() => {
-    const copyIcon = document.getElementById('copyIcon');
-    const gameCode = document.getElementById('gameCode');
+        const copyIcon = document.getElementById('copyIcon');
+        const gameCode = document.getElementById('gameCode');
 
-    copyIcon.addEventListener('click', () => {
-        navigator.clipboard.writeText(gameCode.textContent).then(() => {
-            copyIcon.textContent = '✅';
-            setTimeout(() => copyIcon.textContent = '📋', 1500);
+        copyIcon.addEventListener('click', () => {
+            navigator.clipboard.writeText(gameCode.textContent).then(() => {
+                copyIcon.textContent = '✅';
+                setTimeout(() => copyIcon.textContent = '📋', 1500);
+            });
         });
-    });
-}, 0);
-
+    }, 0);
 };
 
 // Unir-se a partida
@@ -53,81 +53,18 @@ joinGameBtn.onclick = () => {
     gameArea.innerHTML = `<p>Intentant unir-se a la partida amb codi <strong>${gameId}</strong>...</p>`;
 };
 
-// Aquí pots seguir afegint la resta dels handlers de socket.on com ara gameStart, gameResult, etc.
-// Exemple:
+// Missatge quan esperem jugadors
 socket.on('waitingForPlayers', (message) => {
     gameArea.innerHTML = `<p>${message}</p>`;
 });
 
-// ...resta del codi que ja tens per gestionar el joc (gameStart, gameResult, etc.)
-
-
-socket.on('gameStart', (cards) => {
-    const gameArea = document.getElementById('gameArea');
-    gameArea.innerHTML = ''; // Esborrar missatges previs
-
-    cards[socket.id].forEach((card, index) => {
-        const cardElem = document.createElement('div');
-        cardElem.classList.add('card');
-        
-        const img = document.createElement('img');
-        img.src = `images/poker.png`; // Comprovar que les imatges estan correctes
-        img.alt = 'Carta';
-
-        cardElem.appendChild(img);
-
-        cardElem.onclick = () => {
-            socket.emit('pickCard', { gameId, cardIndex: index });
-            selectCard(cardElem); // Marcar la carta com seleccionada
-        };
-        gameArea.appendChild(cardElem);
-    });
-});
-
-socket.on('gameResult', (result) => {
-    const gameArea = document.getElementById('gameArea');
-    gameArea.innerHTML = `<h2>Resultat</h2>
-                          <p>La teva carta: ${result.card1.value} de ${result.card1.suit}</p>
-                          <p>La carta de l'altre jugador: ${result.card2.value} de ${result.card2.suit}</p>`;
-
-    const messageBox = document.createElement('div');
-    messageBox.classList.add('message-box');
-    if (result.winner === socket.id) {
-        messageBox.classList.add('win');
-        messageBox.innerHTML = '<strong>Has guanyat!</strong>';
-    } else if (result.winner === null) {
-        messageBox.classList.add('draw');
-        messageBox.innerHTML = '<strong>Empat!</strong>';
-    } else {
-        messageBox.classList.add('lose');
-        messageBox.innerHTML = '<strong>Has perdut!</strong>';
-    }
-    gameArea.appendChild(messageBox);
-
-    // Afegir botó per reiniciar la partida
-    const restartButton = document.createElement('button');
-    restartButton.textContent = 'Tornar a jugar';
-    restartButton.onclick = () => {
-        socket.emit('restartRound', { gameId });
-        gameArea.innerHTML = '<p>Esperant a la nova ronda...</p>'; // Mostra un missatge d'espera
-    };
-    gameArea.appendChild(restartButton);
-});
-
-// Quan un jugador es desconnecta
-socket.on('playerDisconnected', (data) => {
-    const gameArea = document.getElementById('gameArea');
-    gameArea.innerHTML = `<p>El jugador amb ID ${data.playerId} s'ha desconnectat. El joc ha acabat prematurament.</p>`;
-});
-
-// Funció per marcar una carta com seleccionada
+// Funció per marcar carta seleccionada
 function selectCard(cardElem) {
-    const selectedCards = document.querySelectorAll('.card.selected');
-    selectedCards.forEach(card => card.classList.remove('selected'));
+    document.querySelectorAll('.card.selected').forEach(card => card.classList.remove('selected'));
     cardElem.classList.add('selected');
 }
 
-// Afegir botó d'acabar partida després de mostrar resultat o quan comença la partida
+// Afegir botó per acabar la partida
 function addEndGameButton() {
     const endGameBtn = document.createElement('button');
     endGameBtn.textContent = 'Acabar partida';
@@ -137,41 +74,84 @@ function addEndGameButton() {
     gameArea.appendChild(endGameBtn);
 }
 
-// Quan comença la partida, afegir el botó d'acabar partida
+// Quan comença la partida: mostrar cartes i botó acabar partida
 socket.on('gameStart', (cards) => {
-    gameArea.innerHTML = ''; // Esborrar missatges previs
+    gameArea.innerHTML = ''; // Netejar
 
     cards[socket.id].forEach((card, index) => {
         const cardElem = document.createElement('div');
         cardElem.classList.add('card');
-        
+
         const img = document.createElement('img');
         img.src = `images/poker.png`;
         img.alt = 'Carta';
 
         cardElem.appendChild(img);
-
         cardElem.onclick = () => {
             socket.emit('pickCard', { gameId, cardIndex: index });
             selectCard(cardElem);
         };
+
         gameArea.appendChild(cardElem);
     });
 
-    addEndGameButton();  // Afegim el botó quan comença la partida
+    addEndGameButton();
 });
 
+// Gestionar resultat partida
 socket.on('gameResult', (result) => {
-    gameArea.innerHTML = `<h2>Resultat</h2>
-                          <p>La teva carta: ${result.card1.value} de ${result.card1.suit}</p>
-                          <p>La carta de l'altre jugador: ${result.card2.value} de ${result.card2.suit}</p>`;
+    const gameArea = document.getElementById('gameArea');
+    const isWinner = result.winner === socket.id;
+    const isDraw = result.winner === null;
 
+    // Assignar cartes segons socket.id
+    // Suposem que card1 és del primer jugador i card2 del segon
+    // Aquí necessitem conèixer l'ordre dels jugadors
+    // Com no el tenim, fem un truc: si guanyador és socket.id, la seva carta és card1, si no card2
+    // Però això pot fallar si no tenim info de qui és qui
+    // Per això assignem per defecte així:
+    let myCard, oppCard;
+    if (result.player1 === socket.id) { // <-- Aquest camp cal que el servidor el enviï!
+        myCard = result.card1;
+        oppCard = result.card2;
+    } else if (result.player2 === socket.id) {
+        myCard = result.card2;
+        oppCard = result.card1;
+    } else {
+        // Si no tenim info, assignem arbitràriament:
+        myCard = result.card1;
+        oppCard = result.card2;
+    }
+
+    // Funció per ordenar cartes segons guanyador o perdedor
+    function sortCards(cardA, cardB, ascending = true) {
+        const valuesOrder = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        const indexA = valuesOrder.indexOf(cardA.value);
+        const indexB = valuesOrder.indexOf(cardB.value);
+        return ascending ? (indexA < indexB ? [cardA, cardB] : [cardB, cardA])
+                         : (indexA > indexB ? [cardA, cardB] : [cardB, cardA]);
+    }
+
+    let cardsToShow;
+    if (isWinner) {
+        cardsToShow = sortCards(myCard, oppCard, false); // Carta alta primer
+    } else if (isDraw) {
+        cardsToShow = [myCard, oppCard];
+    } else {
+        cardsToShow = sortCards(myCard, oppCard, true); // Carta baixa primer
+    }
+
+    gameArea.innerHTML = `<h2>Resultat</h2>
+                          <p>La teva carta: ${cardsToShow[0].value} de ${cardsToShow[0].suit}</p>
+                          <p>La carta de l'altre jugador: ${cardsToShow[1].value} de ${cardsToShow[1].suit}</p>`;
+
+    // Missatge d'estat
     const messageBox = document.createElement('div');
     messageBox.classList.add('message-box');
-    if (result.winner === socket.id) {
+    if (isWinner) {
         messageBox.classList.add('win');
         messageBox.innerHTML = '<strong>Has guanyat!</strong>';
-    } else if (result.winner === null) {
+    } else if (isDraw) {
         messageBox.classList.add('draw');
         messageBox.innerHTML = '<strong>Empat!</strong>';
     } else {
@@ -180,7 +160,7 @@ socket.on('gameResult', (result) => {
     }
     gameArea.appendChild(messageBox);
 
-    // Botó per reiniciar la partida
+    // Botó per tornar a jugar
     const restartButton = document.createElement('button');
     restartButton.textContent = 'Tornar a jugar';
     restartButton.onclick = () => {
@@ -189,13 +169,17 @@ socket.on('gameResult', (result) => {
     };
     gameArea.appendChild(restartButton);
 
-    addEndGameButton();  // També afegim el botó aquí després del resultat
+    addEndGameButton();
 });
 
-// Gestionar resposta del servidor quan la partida s’acaba
+// Quan un jugador es desconnecta
+socket.on('playerDisconnected', (data) => {
+    gameArea.innerHTML = `<p>El jugador amb ID ${data.playerId} s'ha desconnectat. El joc ha acabat prematurament.</p>`;
+});
+
+// Quan la partida s’acaba
 socket.on('gameEnded', () => {
     gameArea.innerHTML = '<p>La partida ha acabat. Tornant al lobby...</p>';
     gameId = null;
-    // Mostrar el lobby de nou
     lobby.style.display = 'block';
 });
